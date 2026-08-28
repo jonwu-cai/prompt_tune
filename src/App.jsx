@@ -1,6 +1,6 @@
 import { useState } from 'react'
 
-const ENDPOINT =
+const DEFAULT_ENDPOINT =
   'https://amd2.charactertech.io/vllm/models/launch-quantized-replacement/v1/chat/completions'
 const MODEL = 'launch-quantized-replacement'
 const FREQUENCY_PENALTY = 1.5
@@ -80,8 +80,8 @@ const DEFINITION_SCHEMA = {
   },
 }
 
-async function generate({ apiKey, system, userPrompt, jsonSchema }) {
-  const res = await fetch(ENDPOINT, {
+async function generate({ url, apiKey, system, userPrompt, jsonSchema }) {
+  const res = await fetch(url, {
     method: 'POST',
     headers: {
       Authorization: `Bearer ${apiKey}`,
@@ -153,7 +153,7 @@ function Output({ data }) {
   )
 }
 
-function Section({ title, apiKey, defaultSystem, jsonSchema }) {
+function Section({ title, requestUrl, apiKey, defaultSystem, jsonSchema }) {
   const [system, setSystem] = useState(defaultSystem)
   const [descriptions, setDescriptions] = useState(['A wise ancient wizard'])
   const [results, setResults] = useState(null)
@@ -181,7 +181,7 @@ function Section({ title, apiKey, defaultSystem, jsonSchema }) {
       descriptions.map(async (description) => {
         const userPrompt = `Description: ${description}`
         try {
-          const data = await generate({ apiKey, system, userPrompt, jsonSchema })
+          const data = await generate({ url: requestUrl, apiKey, system, userPrompt, jsonSchema })
           return { description, data, error: null }
         } catch (e) {
           return { description, data: null, error: e.message }
@@ -240,11 +240,13 @@ function Section({ title, apiKey, defaultSystem, jsonSchema }) {
       <button
         className="generate-btn"
         onClick={handleGenerate}
-        disabled={loading || !apiKey}
+        disabled={loading || !apiKey || !requestUrl}
       >
         {loading ? 'Generating…' : `Generate (${descriptions.length})`}
       </button>
-      {!apiKey && <div className="hint">Enter your VLLM_API_KEY above to generate.</div>}
+      {(!apiKey || !requestUrl) && (
+        <div className="hint">Enter the Request URL and VLLM_API_KEY above to generate.</div>
+      )}
 
       {results && (
         <div className="results-panel">
@@ -276,13 +278,24 @@ function Section({ title, apiKey, defaultSystem, jsonSchema }) {
 
 export default function App() {
   const [apiKey, setApiKey] = useState('')
+  const [requestUrl, setRequestUrl] = useState(DEFAULT_ENDPOINT)
 
   return (
     <div className="app">
       <h1>Prompt Tune</h1>
 
       <div className="apikey">
-        <label>VLLM_API_KEY</label>
+        <label>Request URL *</label>
+        <input
+          type="text"
+          value={requestUrl}
+          onChange={(e) => setRequestUrl(e.target.value)}
+          placeholder="https://…/v1/chat/completions"
+        />
+      </div>
+
+      <div className="apikey">
+        <label>VLLM_API_KEY *</label>
         <input
           type="password"
           value={apiKey}
@@ -293,6 +306,7 @@ export default function App() {
 
       <Section
         title="Character"
+        requestUrl={requestUrl}
         apiKey={apiKey}
         defaultSystem={DEFAULT_CHARACTER_SYSTEM}
         jsonSchema={CHARACTER_SCHEMA}
@@ -300,6 +314,7 @@ export default function App() {
 
       <Section
         title="Definition"
+        requestUrl={requestUrl}
         apiKey={apiKey}
         defaultSystem={DEFAULT_DEFINITION_SYSTEM}
         jsonSchema={DEFINITION_SCHEMA}
