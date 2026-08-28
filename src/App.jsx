@@ -1,7 +1,5 @@
 import { useState } from 'react'
 
-const DEFAULT_ENDPOINT =
-  'https://amd2.charactertech.io/vllm/models/launch-quantized-replacement/v1/chat/completions'
 const MODEL = 'launch-quantized-replacement'
 const FREQUENCY_PENALTY = 1.5
 
@@ -278,7 +276,7 @@ function Section({ title, requestUrl, apiKey, defaultSystem, jsonSchema }) {
 
 export default function App() {
   const [apiKey, setApiKey] = useState('')
-  const [requestUrl, setRequestUrl] = useState(DEFAULT_ENDPOINT)
+  const [requestUrl, setRequestUrl] = useState('')
 
   return (
     <div className="app">
