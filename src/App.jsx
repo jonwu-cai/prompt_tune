@@ -113,6 +113,43 @@ async function generate({ url, apiKey, system, userPrompt, jsonSchema }) {
   }
 }
 
+function toCell(value) {
+  if (value == null) return ''
+  if (Array.isArray(value)) return value.join('\n')
+  if (typeof value === 'object') return JSON.stringify(value)
+  return String(value)
+}
+
+function escapeCsv(cell) {
+  return /[",\n\r]/.test(cell) ? `"${cell.replace(/"/g, '""')}"` : cell
+}
+
+function exportToExcel(title, results) {
+  const fieldKeys = []
+  for (const r of results) {
+    if (r.data && typeof r.data === 'object' && !Array.isArray(r.data)) {
+      for (const k of Object.keys(r.data)) {
+        if (!fieldKeys.includes(k)) fieldKeys.push(k)
+      }
+    }
+  }
+
+  const headers = ['description', ...fieldKeys, 'error']
+  const rows = results.map((r) => {
+    const cells = [r.description, ...fieldKeys.map((k) => (r.data ? r.data[k] : '')), r.error]
+    return cells.map((c) => escapeCsv(toCell(c))).join(',')
+  })
+
+  const csv = '﻿' + [headers.map(escapeCsv).join(','), ...rows].join('\r\n')
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = `${title.toLowerCase()}-results.csv`
+  a.click()
+  URL.revokeObjectURL(url)
+}
+
 function highlightJson(json) {
   const escaped = json
     .replace(/&/g, '&amp;')
@@ -248,6 +285,15 @@ function Section({ title, requestUrl, apiKey, defaultSystem, jsonSchema }) {
 
       {results && (
         <div className="results-panel">
+          <div className="results-header">
+            <button
+              type="button"
+              className="export-btn"
+              onClick={() => exportToExcel(title, results)}
+            >
+              Export to Excel
+            </button>
+          </div>
           {results.length > 1 && (
             <div className="tabs">
               {results.map((r, i) => (
