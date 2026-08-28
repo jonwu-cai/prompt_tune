@@ -1,4 +1,25 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
+
+function usePersistentState(key, initial) {
+  const [value, setValue] = useState(() => {
+    try {
+      const stored = localStorage.getItem(key)
+      return stored != null ? JSON.parse(stored) : initial
+    } catch {
+      return initial
+    }
+  })
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(key, JSON.stringify(value))
+    } catch {
+      // storage unavailable — keep working in-memory
+    }
+  }, [key, value])
+
+  return [value, setValue]
+}
 
 const MODEL = 'launch-quantized-replacement'
 const FREQUENCY_PENALTY = 1.5
@@ -189,8 +210,11 @@ function Output({ data }) {
 }
 
 function Section({ title, requestUrl, apiKey, defaultSystem, jsonSchema }) {
-  const [system, setSystem] = useState(defaultSystem)
-  const [descriptions, setDescriptions] = useState(['A wise ancient wizard'])
+  const [system, setSystem] = usePersistentState(`promptTune:${title}:system`, defaultSystem)
+  const [descriptions, setDescriptions] = usePersistentState(
+    `promptTune:${title}:descriptions`,
+    ['A wise ancient wizard'],
+  )
   const [results, setResults] = useState(null)
   const [activeTab, setActiveTab] = useState(0)
   const [loading, setLoading] = useState(false)
@@ -232,7 +256,18 @@ function Section({ title, requestUrl, apiKey, defaultSystem, jsonSchema }) {
     <section className="card">
       <h2>{title}</h2>
 
-      <label>System prompt</label>
+      <div className="prompt-header">
+        <label>System prompt</label>
+        <button
+          type="button"
+          className="reset-btn"
+          onClick={() => setSystem(defaultSystem)}
+          disabled={system === defaultSystem}
+          title="Reset system prompt to default"
+        >
+          Reset to default
+        </button>
+      </div>
       <textarea
         rows={10}
         value={system}

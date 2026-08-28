@@ -154,6 +154,14 @@ button:disabled {
   color: #e6e8eb;
 }
 
+.reset-btn {
+  margin: 0;
+  padding: 5px 12px;
+  font-size: 13px;
+  background: #232936;
+  color: #e6e8eb;
+}
+
 .prompt-row {
   display: flex;
   gap: 8px;
