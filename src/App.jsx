@@ -288,7 +288,7 @@ export default function App() {
           type="text"
           value={requestUrl}
           onChange={(e) => setRequestUrl(e.target.value)}
-          placeholder="https://…/v1/chat/completions"
+          placeholder="Request URL"
         />
       </div>
 
